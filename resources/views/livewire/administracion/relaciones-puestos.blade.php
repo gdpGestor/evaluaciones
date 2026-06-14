@@ -12,8 +12,7 @@
                 </h1>
 
                 <p class="mt-1.5 max-w-3xl text-sm leading-5 text-blue-100">
-                    Defina qué puestos deben evaluar a otros puestos dentro
-                    de la estructura organizacional.
+                    Defina qué puestos deben evaluar a otros puestos y qué plantilla debe usarse en cada relación.
                 </p>
             </div>
 
@@ -65,7 +64,7 @@
                     id="buscar"
                     type="text"
                     wire:model.live.debounce.300ms="buscar"
-                    placeholder="Código o nombre del puesto..."
+                    placeholder="Código, puesto o plantilla..."
                     class="mt-1.5 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                 >
             </div>
@@ -88,6 +87,14 @@
                             Puesto evaluado
                         </th>
 
+                        <th class="px-4 py-3">
+                            Plantilla
+                        </th>
+
+                        <th class="px-4 py-3 text-center">
+                            Tipo
+                        </th>
+
                         <th class="px-4 py-3 text-center">
                             Estado
                         </th>
@@ -101,19 +108,22 @@
                 <tbody class="divide-y divide-slate-100 bg-white">
                     @forelse ($relaciones as $relacion)
                         @php
-                            $codigoEvaluador = $relacion->puestoEvaluador->plantilla->codigo;
-                            $codigoEvaluado = $relacion->puestoEvaluado->plantilla->codigo;
+                            $codigoPlantillaRelacion = $relacion->plantilla?->codigo ?? 'SIN';
 
-                            $estiloEvaluador = match ($codigoEvaluador) {
-                                'GER' => 'bg-blue-50 text-blue-700',
-                                'MM' => 'bg-indigo-50 text-indigo-700',
-                                default => 'bg-cyan-50 text-cyan-700',
+                            $estiloPlantillaRelacion = match ($codigoPlantillaRelacion) {
+                                'GER', 'LIDERGER' => 'bg-blue-50 text-blue-700',
+                                'MM', 'LIDERMM' => 'bg-indigo-50 text-indigo-700',
+                                'OPA', 'OPE' => 'bg-cyan-50 text-cyan-700',
+                                default => 'bg-slate-100 text-slate-600',
                             };
 
-                            $estiloEvaluado = match ($codigoEvaluado) {
-                                'GER' => 'bg-blue-50 text-blue-700',
-                                'MM' => 'bg-indigo-50 text-indigo-700',
-                                default => 'bg-cyan-50 text-cyan-700',
+                            $textoTipoRelacion = $tiposRelacion[$relacion->tipo_relacion] ?? 'Sin definir';
+
+                            $estiloTipoRelacion = match ($relacion->tipo_relacion) {
+                                'descendente' => 'bg-emerald-50 text-emerald-700',
+                                'ascendente' => 'bg-amber-50 text-amber-700',
+                                'lateral' => 'bg-purple-50 text-purple-700',
+                                default => 'bg-slate-100 text-slate-600',
                             };
                         @endphp
 
@@ -130,10 +140,6 @@
                                 <div class="mt-1 flex flex-wrap items-center gap-2">
                                     <span class="text-[11px] font-bold text-slate-500">
                                         {{ $relacion->puestoEvaluador->codigo }}
-                                    </span>
-
-                                    <span class="rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide {{ $estiloEvaluador }}">
-                                        {{ $codigoEvaluador }}
                                     </span>
                                 </div>
                             </td>
@@ -155,11 +161,31 @@
                                     <span class="text-[11px] font-bold text-slate-500">
                                         {{ $relacion->puestoEvaluado->codigo }}
                                     </span>
-
-                                    <span class="rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide {{ $estiloEvaluado }}">
-                                        {{ $codigoEvaluado }}
-                                    </span>
                                 </div>
+                            </td>
+
+                            {{-- Plantilla de la relación --}}
+                            <td class="whitespace-nowrap px-4 py-3">
+                                @if ($relacion->plantilla)
+                                    <span class="rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide {{ $estiloPlantillaRelacion }}">
+                                        {{ $relacion->plantilla->codigo }}
+                                    </span>
+
+                                    <p class="mt-1 text-[11px] font-bold text-slate-500">
+                                        {{ $relacion->plantilla->nombre }}
+                                    </p>
+                                @else
+                                    <span class="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-red-700">
+                                        Sin plantilla
+                                    </span>
+                                @endif
+                            </td>
+
+                            {{-- Tipo de relación --}}
+                            <td class="whitespace-nowrap px-4 py-3 text-center">
+                                <span class="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wide {{ $estiloTipoRelacion }}">
+                                    {{ $textoTipoRelacion }}
+                                </span>
                             </td>
 
                             {{-- Estado --}}
@@ -205,7 +231,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-4 py-8 text-center">
+                            <td colspan="7" class="px-4 py-8 text-center">
                                 <p class="text-sm font-black text-slate-700">
                                     No se encontraron relaciones
                                 </p>
@@ -235,7 +261,7 @@
             class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm"
             wire:click.self="cerrarModal"
         >
-            <section class="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <section class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                 {{-- Encabezado --}}
                 <div class="bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-900 px-5 py-4 text-white">
                     <div class="flex items-start justify-between gap-4">
@@ -284,8 +310,6 @@
                                     {{ $puesto->codigo }}
                                     ·
                                     {{ $puesto->nombre }}
-                                    ·
-                                    {{ $puesto->plantilla->codigo }}
                                     {{ $puesto->activo ? '' : '· INACTIVO' }}
                                 </option>
                             @endforeach
@@ -328,8 +352,6 @@
                                     {{ $puesto->codigo }}
                                     ·
                                     {{ $puesto->nombre }}
-                                    ·
-                                    {{ $puesto->plantilla->codigo }}
                                     {{ $puesto->activo ? '' : '· INACTIVO' }}
                                 </option>
                             @endforeach
@@ -342,6 +364,73 @@
                         @enderror
                     </div>
 
+                    {{-- Plantilla y tipo --}}
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label
+                                for="plantillaId"
+                                class="text-xs font-black uppercase tracking-wide text-slate-600"
+                            >
+                                Plantilla de evaluación
+                            </label>
+
+                            <select
+                                id="plantillaId"
+                                wire:model="plantillaId"
+                                class="mt-1.5 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                            >
+                                <option value="">
+                                    Seleccione plantilla
+                                </option>
+
+                                @foreach ($plantillas as $plantilla)
+                                    <option value="{{ $plantilla->id }}">
+                                        {{ $plantilla->codigo }}
+                                        ·
+                                        {{ $plantilla->nombre }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            @error('plantillaId')
+                                <p class="mt-1.5 text-xs font-bold text-red-700">
+                                    {{ $message }}
+                                </p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label
+                                for="tipoRelacion"
+                                class="text-xs font-black uppercase tracking-wide text-slate-600"
+                            >
+                                Tipo de relación
+                            </label>
+
+                            <select
+                                id="tipoRelacion"
+                                wire:model="tipoRelacion"
+                                class="mt-1.5 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                            >
+                                <option value="">
+                                    Seleccione tipo
+                                </option>
+
+                                @foreach ($tiposRelacion as $valor => $texto)
+                                    <option value="{{ $valor }}">
+                                        {{ $texto }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            @error('tipoRelacion')
+                                <p class="mt-1.5 text-xs font-bold text-red-700">
+                                    {{ $message }}
+                                </p>
+                            @enderror
+                        </div>
+                    </div>
+
                     {{-- Explicación --}}
                     <div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
                         <p class="text-xs font-black text-blue-900">
@@ -349,9 +438,8 @@
                         </p>
 
                         <p class="mt-1 text-xs leading-5 text-blue-700">
-                            El puesto evaluador deberá responder una evaluación
-                            sobre el puesto evaluado. La relación contraria debe
-                            registrarse por separado cuando también sea necesaria.
+                            El puesto evaluador responderá una evaluación sobre el puesto evaluado.
+                            La plantilla se toma desde esta relación específica, no desde el puesto evaluado.
                         </p>
                     </div>
 

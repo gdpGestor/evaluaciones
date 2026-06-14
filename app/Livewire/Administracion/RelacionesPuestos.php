@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Administracion;
 
+use App\Models\Plantilla;
 use App\Models\Puesto;
 use App\Models\RelacionPuesto;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,10 @@ class RelacionesPuestos extends Component
     public ?int $puestoEvaluadorId = null;
 
     public ?int $puestoEvaluadoId = null;
+
+    public ?int $plantillaId = null;
+
+    public ?string $tipoRelacion = null;
 
     public bool $activo = true;
 
@@ -41,6 +46,8 @@ class RelacionesPuestos extends Component
         $this->relacionId = $relacion->id;
         $this->puestoEvaluadorId = $relacion->puesto_evaluador_id;
         $this->puestoEvaluadoId = $relacion->puesto_evaluado_id;
+        $this->plantillaId = $relacion->plantilla_id;
+        $this->tipoRelacion = $relacion->tipo_relacion;
         $this->activo = (bool) $relacion->activo;
 
         $this->resetValidation();
@@ -76,16 +83,36 @@ class RelacionesPuestos extends Component
                     )
                     ->ignore($this->relacionId),
             ],
+            'plantillaId' => [
+                'required',
+                'exists:plantillas,id',
+            ],
+            'tipoRelacion' => [
+                'required',
+                Rule::in([
+                    'descendente',
+                    'ascendente',
+                    'lateral',
+                    'otra',
+                ]),
+            ],
             'activo' => [
                 'boolean',
             ],
         ], [
             'puestoEvaluadorId.required' => 'Seleccione el puesto evaluador.',
             'puestoEvaluadorId.exists' => 'El puesto evaluador seleccionado no es válido.',
+
             'puestoEvaluadoId.required' => 'Seleccione el puesto evaluado.',
             'puestoEvaluadoId.exists' => 'El puesto evaluado seleccionado no es válido.',
             'puestoEvaluadoId.not_in' => 'Un puesto no puede evaluarse a sí mismo.',
             'puestoEvaluadoId.unique' => 'Esta relación entre puestos ya existe.',
+
+            'plantillaId.required' => 'Seleccione la plantilla que usará esta relación.',
+            'plantillaId.exists' => 'La plantilla seleccionada no es válida.',
+
+            'tipoRelacion.required' => 'Seleccione el tipo de relación.',
+            'tipoRelacion.in' => 'El tipo de relación seleccionado no es válido.',
         ]);
 
         $esEdicion = $this->relacionId !== null;
@@ -97,6 +124,8 @@ class RelacionesPuestos extends Component
             [
                 'puesto_evaluador_id' => $datos['puestoEvaluadorId'],
                 'puesto_evaluado_id' => $datos['puestoEvaluadoId'],
+                'plantilla_id' => $datos['plantillaId'],
+                'tipo_relacion' => $datos['tipoRelacion'],
                 'activo' => $datos['activo'],
             ]
         );
@@ -149,6 +178,8 @@ class RelacionesPuestos extends Component
             'relacionId',
             'puestoEvaluadorId',
             'puestoEvaluadoId',
+            'plantillaId',
+            'tipoRelacion',
             'activo'
         );
 
@@ -158,14 +189,15 @@ class RelacionesPuestos extends Component
     }
 
     /**
-     * Carga las relaciones existentes y los puestos disponibles.
+     * Carga las relaciones existentes, puestos y plantillas disponibles.
      */
     public function render()
     {
         $relaciones = RelacionPuesto::query()
             ->with([
-                'puestoEvaluador.plantilla',
-                'puestoEvaluado.plantilla',
+                'puestoEvaluador',
+                'puestoEvaluado',
+                'plantilla',
             ])
             ->when(
                 $this->buscar,
@@ -203,6 +235,22 @@ class RelacionesPuestos extends Component
                                             '%' . $this->buscar . '%'
                                         );
                                 }
+                            )
+                            ->orWhereHas(
+                                'plantilla',
+                                function ($plantillas) {
+                                    $plantillas
+                                        ->where(
+                                            'nombre',
+                                            'like',
+                                            '%' . $this->buscar . '%'
+                                        )
+                                        ->orWhere(
+                                            'codigo',
+                                            'like',
+                                            '%' . $this->buscar . '%'
+                                        );
+                                }
                             );
                     });
                 }
@@ -221,7 +269,11 @@ class RelacionesPuestos extends Component
          * histórica pueda continuar editándose correctamente.
          */
         $puestos = Puesto::query()
-            ->with('plantilla')
+            ->orderBy('nombre')
+            ->get();
+
+        $plantillas = Plantilla::query()
+            ->orderBy('codigo')
             ->orderBy('nombre')
             ->get();
 
@@ -230,6 +282,13 @@ class RelacionesPuestos extends Component
             [
                 'relaciones' => $relaciones,
                 'puestos' => $puestos,
+                'plantillas' => $plantillas,
+                'tiposRelacion' => [
+                    'descendente' => 'Descendente',
+                    'ascendente' => 'Ascendente',
+                    'lateral' => 'Lateral',
+                    'otra' => 'Otra',
+                ],
             ]
         );
     }

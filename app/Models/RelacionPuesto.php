@@ -12,6 +12,8 @@ class RelacionPuesto extends Model
     protected $fillable = [
         'puesto_evaluador_id',
         'puesto_evaluado_id',
+        'plantilla_id',
+        'tipo_relacion',
         'activo',
     ];
 
@@ -23,6 +25,11 @@ class RelacionPuesto extends Model
     public function puestoEvaluado()
     {
         return $this->belongsTo(Puesto::class, 'puesto_evaluado_id');
+    }
+
+    public function plantilla()
+    {
+        return $this->belongsTo(Plantilla::class);
     }
 }
 
