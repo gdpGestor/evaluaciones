@@ -29,8 +29,7 @@
                                         stroke-linejoin="round"
                                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"
                                     />
-                                </svg>
-                            </div>
+                                </svg>                            </div>
 
                             <h1 class="mt-8 text-4xl font-black tracking-tight">
                                 Portal de Evaluaciones
@@ -44,8 +43,13 @@
 
                         <div class="grid grid-cols-3 gap-3">
                             <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur">
-                                <p class="text-2xl font-black">3</p>
-                                <p class="mt-1 text-xs text-blue-100">Plantillas</p>
+                                <p class="text-2xl font-black">
+                                   {{ \App\Models\Plantilla::where('activo', true)->count() }}
+                                </p>
+
+                               <p class="mt-1 text-xs text-blue-100">
+                                  Plantillas
+                               </p>
                             </div>
 
                             <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur">

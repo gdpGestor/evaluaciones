@@ -1,3 +1,4 @@
+
 <div class="mx-auto w-full max-w-7xl px-2 sm:px-4">
     {{-- Mensaje de confirmación --}}
     @if (session('mensaje'))
@@ -79,10 +80,17 @@
             <div class="mt-4 grid gap-4 lg:grid-cols-2">
                 @forelse ($plantillas as $plantilla)
                     @php
-                        $totalDimensiones = $plantilla->dimensiones->count();
+                        $totalDimensiones = $plantilla->dimensiones
+			        ->filter(fn ($dimension) => (int) $dimension->activo === 1)
+			        ->count();
 
-                        $totalPreguntas = $plantilla->dimensiones
-                            ->sum(fn ($dimension) => $dimension->preguntas->count());
+			    $totalPreguntas = $plantilla->dimensiones
+			        ->filter(fn ($dimension) => (int) $dimension->activo === 1)
+			        ->sum(
+			            fn ($dimension) => $dimension->preguntas
+			                ->filter(fn ($pregunta) => (int) $pregunta->activo === 1)
+			                ->count()
+                             );
 
                         $estiloPlantilla = match ($plantilla->codigo) {
                             'GER' => [
@@ -213,8 +221,13 @@
         {{-- ========================================================= --}}
 
         @php
-            $totalPreguntasPlantilla = $plantillaSeleccionada->dimensiones
-                ->sum(fn ($dimension) => $dimension->preguntas->count());
+	        $totalPreguntasPlantilla = $plantillaSeleccionada->dimensiones
+	        ->filter(fn ($dimension) => (int) $dimension->activo === 1)
+	        ->sum(
+	            fn ($dimension) => $dimension->preguntas
+	                ->filter(fn ($pregunta) => (int) $pregunta->activo === 1)
+	                ->count()
+	        );          
         @endphp
 
         {{-- Encabezado del editor --}}
@@ -365,9 +378,16 @@
                             </div>
 
                             <div class="flex flex-wrap items-center gap-2">
+                                @php
+                                    $totalPreguntasActivas = $dimension->preguntas
+				        ->filter(fn ($pregunta) => (int) $pregunta->activo === 1)
+				        ->count();
+				@endphp
+
+
                                 <span class="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200">
-                                    {{ $dimension->preguntas->count() }}
-                                    {{ $dimension->preguntas->count() === 1 ? 'pregunta' : 'preguntas' }}
+                                    {{ $totalPreguntasActivas }}
+                                    {{ $totalPreguntasActivas === 1 ? 'pregunta activa' : 'preguntas activas' }}
                                 </span>
 
                                 <button
